@@ -1,57 +1,15 @@
-from pprint import pprint
-from PIL import Image
-import piexif
 import os
 import glob
+import shutil
+from PIL import Image
+import piexif
+import pandas as pd
 
 codec = 'ISO-8859-1'
-
-# bounding box for Cambridge
-cambs_dict = {
-    'folder_name': 'Cambridge',
-    'lat_min': 52.0481, # royston
-    'lat_max': 52.3995, # ely
-    'long_min': -0.2651, # st neots
-    'long_max': 0.7113 # bury st edmunds
-}
-
-# bounding box for Manchester
-mcr_dict = {
-    'folder_name': 'Manchester',
-    'lat_min': 53.2587, # macclesfield
-    'lat_max': 53.7486, # blackburn
-    'long_min': -2.5197, # leigh
-    'long_max': -1.9489 # glossop
-}
-
-# bounding box for London 
-ldn_dict = {
-    'folder_name': 'London',
-    'lat_min': 51.1091, # crawley
-    'lat_max': 51.7678, # harlow
-    'long_min': -0.6157, # windsor
-    'long_max': 0.3708 # gravesend
-}
-
-# bounding box for Leeds
-leeds_dict = {
-    'folder_name': 'Leeds',
-    'lat_min': 53.6833, # wakefield
-    'lat_max': 53.8999, # harewood
-    'long_min': -1.7564, # bradford
-    'long_max': -1.3321 # micklefield
-}
-
-# bounding box for Nottingham
-notts_dict = {
-    'folder_name': 'Nottingham',
-    'lat_min': 52.8291, # east leake
-    'lat_max': 53.0376, # calverton
-    'long_min': -1.2800, # trowell
-    'long_max': -0.9561 # bingham
-}
+here = f"{os.path.dirname(os.path.realpath(__file__))}"
 
 def exif_to_tag(exif_dict):
+    """ no longer used as it produces an AttributeError on some photos """
     exif_tag_dict = {}
     thumbnail = exif_dict.pop('thumbnail')
     exif_tag_dict['thumbnail'] = thumbnail.decode(codec)
@@ -69,32 +27,43 @@ def exif_to_tag(exif_dict):
 
     return exif_tag_dict
 
+def get_exif_data(img):
+    try:
+        exif_dict = piexif.load(img.info.get('exif'))
+        gps_dict = exif_dict['GPS']
+    except:
+        # there was an error parsing the EXIF dictionary
+        # there's possibly missing data
+        return None
+    
+    return gps_dict
+
 def get_latlong_as_decimal(data):
     vals = [i[0]/i[1] for i in data]
     return vals[0] + vals[1]/60 + vals[2]/3600 # deg, mins, secs
 
 def find_image_location(lat, long):
-    for dict in [cambs_dict, mcr_dict, ldn_dict, leeds_dict, notts_dict]:
+    df = pd.read_csv(f'{here}/regions.csv')
+    for i, _ in enumerate(df):
         # check latitude
-        if dict['lat_min'] < lat < dict['lat_max']:
+        if df['lat_min'][i] < lat < df['lat_max'][i]:
             # check longitude
-            if dict['long_min'] < long < dict['long_max']:
-                return dict['folder_name']
+            if df['long_min'][i] < long < df['long_max'][i]:
+                return df['folder_name'][i]
+
+def copy_file_to_correct_folder(filename, folder):
+    shortened_name = filename.split("input_photos\\")[1]
+    shutil.copy(filename, f'{here}/{folder}/{shortened_name}')
 
 def main():
-    here = f"{os.path.dirname(os.path.realpath(__file__))}"
-
     for filename in glob.glob(f"{here}/input_photos/*"):
         # open image
         img = Image.open(filename)
 
         # get EXIF data from image, specifically GPS data
-        try:
-            exif_dict = piexif.load(img.info.get('exif'))
-            gps_dict = exif_dict['GPS']
-        except:
-            # there was an error parsing the EXIF dictionary
-            # there's possibly missing data
+        gps_dict = get_exif_data(img)
+        if gps_dict is None:
+            # no GPS data exists in file EXIF
             continue
         
         # calculate latitude and longitude from degrees, mins, secs
@@ -108,8 +77,14 @@ def main():
             long = -1 * long
 
         # locate image given defined bounding boxes
-        correct_folder = find_image_location(lat, long)
-        print(f"{filename}: {correct_folder}")
+        folder = find_image_location(lat, long)
+
+        # make folder if it doesn't exist already
+        if not os.path.exists(f'{here}/{folder}'):
+            os.mkdir(folder)
+
+        # copy file to folder
+        copy_file_to_correct_folder(filename, folder)
 
 if __name__ == '__main__':
    main()
