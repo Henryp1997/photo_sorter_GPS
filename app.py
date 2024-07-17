@@ -12,41 +12,63 @@ class Color(QWidget):
         palette.setColor(QPalette.ColorRole.Window, QColor(color))
         self.setPalette(palette)
 
+class RegionWidget(QWidget):
+    def __init__(self, lat_long):
+        super().__init__()
+        layout = QGridLayout()
+        layout.addWidget(QLabel("Coordinate:"), 0, 0)
+        layout.addWidget(QLineEdit(self), 0, 1)
+        layout.addWidget(QLabel("Direction:"), 0, 2)
+        dropdown = QComboBox()
+        if lat_long == "lat":
+            dropdown.addItems(["N", "S"])
+        else:
+            dropdown.addItems(["W", "E"])
+        layout.addWidget(dropdown, 0, 3)
+        self.setLayout(layout)
+
 class Main(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Photo sorter")
         self.setFixedHeight(350)
-        self.setFixedWidth(500)
 
         layout = QGridLayout()
 
         browse_btn = QPushButton(self)
         browse_btn.setText("Browse...")
         browse_btn.clicked.connect(self.open_dialog)
+        browse_widget = QWidget()
+        browse_widget.setFixedWidth(200)
         browse_layout = QVBoxLayout()
         browse_layout.addWidget(QLabel("Select image directory:"))
         browse_layout.addWidget(browse_btn)
-        layout.addLayout(browse_layout, 0, 0)
+
+        browse_widget.setLayout(browse_layout)
+        layout.addWidget(browse_widget, 0, 0)
 
         coords = (
             QLabel("Bottom latitude:"),
-            QLineEdit(self),
+            RegionWidget("lat"),
             QLabel("Top latitude:"),
-            QLineEdit(self),
+            RegionWidget("lat"),
             QLabel("Left longitude:"),
-            QLineEdit(self),
+            RegionWidget("long"),
             QLabel("Right longitude:"),
-            QLineEdit(self),
+            RegionWidget("long"),
         )
         
+        region_widget = QWidget()
+        region_widget.setFixedWidth(400)
         region_layout = QVBoxLayout()
-        region_layout.addWidget(QLabel("Create new region. Find the bounding box for your new region using Google Maps coordinates."))
-        region_layout.addWidget(Color("white"))
-        for item in coords:
+        region_label = QLabel("Create new region. Find the bounding box for your new region using Google Maps coordinates.")
+        region_label.setWordWrap(True)
+        region_layout.addWidget(region_label)
+        for i, item in enumerate(coords):
             region_layout.addWidget(item)
         
-        layout.addLayout(region_layout, 0, 1)
+        region_widget.setLayout(region_layout)
+        layout.addWidget(region_widget, 0, 1)
 
         # finally set widget layout to variable layout
         widget = QWidget()
