@@ -1,6 +1,9 @@
 # Photo sorter by GPS region
 Sort photos given their GPS EXIF data - place them in user defined folders. User must figure out a bounding box for their desired location
 
+![image](https://github.com/user-attachments/assets/035acc4e-6cc2-41b8-a5f3-9cf24e1badb5)
+
+
 ## To use
 1. Firstly, place all your photos into the `input_photos` directory which is in the same location as the python script
 3. Figure out the bounding box for your chosen region. This is just four towns or villages North, South, West and East of the centre of your region. Take these four sets of coordinates and input them into the `regions.csv` file as defined below:
