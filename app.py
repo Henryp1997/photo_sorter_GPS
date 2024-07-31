@@ -31,7 +31,7 @@ class Main(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Photo sorter")
-        self.setFixedHeight(350)
+        self.setFixedHeight(450)
 
         layout = QGridLayout()
 
@@ -48,6 +48,8 @@ class Main(QMainWindow):
         layout.addWidget(browse_widget, 0, 0)
 
         coords = (
+            QLabel("Region name:"),
+            QLineEdit(),
             QLabel("Bottom latitude:"),
             RegionWidget("lat"),
             QLabel("Top latitude:"),
@@ -58,11 +60,16 @@ class Main(QMainWindow):
             RegionWidget("long"),
         )
         
+        # add new region column
         region_widget = QWidget()
         region_widget.setFixedWidth(400)
+
+        # vertical column layout
         region_layout = QVBoxLayout()
+
         region_label = QLabel("Create new region. Find the bounding box for your new region using Google Maps coordinates.")
         region_label.setWordWrap(True)
+
         region_layout.addWidget(region_label)
         for i, item in enumerate(coords):
             region_layout.addWidget(item)
